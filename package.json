@@ -5,7 +5,7 @@
   "repository": "segmentio/nsq-delete-topic",
   "license": "MIT",
   "publishConfig": {
-    "repository": "https://registry.npmjs.org"
+    "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
     "batch": "^0.5.0",
