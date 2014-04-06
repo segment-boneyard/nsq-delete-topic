@@ -1,6 +1,6 @@
 {
   "name": "nsq-delete-topic",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Delete a nsq topic and all its channels and messages",
   "repository": "segmentio/nsq-delete-topic",
   "license": "MIT",
