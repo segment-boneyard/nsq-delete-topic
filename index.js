@@ -14,7 +14,7 @@ function deleteTopic(nsqlookupd, topic, fn){
         return function(){
           request
           .post(node.broadcast_address + ':' + node.http_port + '/delete_topic')
-          .query({ topic: topic })
+          .send({ topic: topic })
           .end(function(err, res){
             if (err) return done(err);
             if (res.error && /INVALID_TOPIC/.test(err.message)) return done();
