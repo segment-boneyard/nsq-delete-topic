@@ -1,5 +1,5 @@
 var lookup = require('nsq-lookup');
-var batch = require('batch');
+var Batch = require('batch');
 var request = require('superagent');
 
 module.exports = deleteTopic;
@@ -26,7 +26,7 @@ function deleteTopic(nsqlookupd, topic, fn){
   });
 };
 
-function hasTopic(name){
+function hasTopic(topic){
   return function(node){
     return node.topics.indexOf(topic) > -1;
   }
