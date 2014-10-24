@@ -11,5 +11,9 @@
     "batch": "^0.5.0",
     "nsq-lookup": "0.0.1",
     "superagent": "^0.17.0"
+  },
+  "devDependencies": {
+    "mocha": "^2.0.1",
+    "should": "^4.1.0"
   }
 }

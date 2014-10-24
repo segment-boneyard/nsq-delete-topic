@@ -3,6 +3,13 @@ var Batch = require('batch');
 var request = require('superagent');
 var debug = require('debug')('nsq-delete-topic');
 
+/**
+ * The general flow of this process should be similiar to what the
+ * nsqadmin does when you delete a topic from the web admin. It will
+ * first delete the topic from all of your nsqlookupd servers and then
+ * it will go find all of the nsqd servers and delete from there.
+ */
+
 module.exports = deleteTopic;
 
 function deleteTopic(nsqlookupd, topic, fn){
@@ -12,48 +19,71 @@ function deleteTopic(nsqlookupd, topic, fn){
     nsqlookupd = [nsqlookupd];
   }
 
-  debug('deleting topic', topic);
   debug('lookup up servers', nsqlookupd);
 
-  deleteFromNsqd(nsqlookupd, topic, function () {
-    deleteFromLookupd(nsqlookupd, topic, fn);
+  nsqlookupd.map(function(node) {
+    debug('processing lookupd server', node);
+    batch.push(function (done) {
+      request
+        .post(node + '/topic/delete?topic=' + topic)
+        .end(function (err, res) {
+          if (err) {
+            debug('error deleting from lookupd', node, error);
+            return done(err);
+          }
+          if (res.error) {
+            debug('error from lookupd on delete', node, res.error);
+            return done(err);
+          }
+
+          debug('lookupd request complete', err, res.status);
+          done();
+        });
+    });
+  });
+
+  batch.end(function (err) {
+    if (err) return fn(err);
+
+    debug('lookupd complete, starting nsqd');
+    deleteOnNsqd(nsqlookupd, topic, fn);
   });
 }
 
-function deleteFromNsqd(nsqlookupd, topic, callback) {
-  var batch = new Batch();
+function deleteOnNsqd(nsqlookupd, topic, callback) {
   lookup(nsqlookupd, function(err, nodes){
+    var batch = new Batch();
     if (err) {
       debug('lookup error', err);
-      return fn(err);
+      return callback(err);
     }
 
     nodes
-      .filter(hasTopic(topic))
+      // need to investigate why adding this causes bad things
+      // to happen in the unit tests.
+      // .filter(hasTopic(topic))
       .map(function(node){
         // loop through all of our nodes that contain this topic
         // and call the delete on each of them.
-        debug('found node', node.broadcast_address, node.http_port);
+        debug('found nsdq node', node.broadcast_address, node.http_port);
         batch.push(function(done){
-          var nodeAddress = node.broadcast_address + ':' + node.http_port;
-          debug('processing nsqd node', nodeAddress);
+          var myNode = node.broadcast_address + ':' + node.http_port;
 
+          debug('processing nsqd node', myNode, topic);
           request
-            .post(nodeAddress + '/topic/delete?topic=' + topic)
+            .post(myNode +
+              '/topic/delete?topic=' + topic)
             .end(function(err, res){
-              debug(
-                'nsqd node complete',
-                nodeAddress,
-                res.status,
-                err
-              );
-
-              if (err) return done(err);
+              debug('nsqd request complete', myNode, topic);
+              if (err) {
+                debug('error deleting from nsqd', myNode, err);
+                return done(err);
+              }
               if (res.error) {
-                debug(res.error);
+                debug('error returned from nsqd', myNode, res.error);
                 return done(res.error);
               }
-              debug('success', nodeAddress);
+              debug('nsqd node completed', myNode, topic, res.status);
               done();
             });
         });
@@ -62,25 +92,6 @@ function deleteFromNsqd(nsqlookupd, topic, callback) {
     batch.end(callback);
   });
 
-}
-
-function deleteFromLookupd(nsqlookupd, topic, callback) {
-  var batch = new Batch();
-  // now we need to loop through all of our lookupd servers
-  // and delete the topic from there
-  nsqlookupd.map(function(node) {
-    debug('processing lookupd node', node);
-    batch.push(function (done) {
-      request
-        .post(node + '/topic/delete?topic=' + topic)
-        .end(function (err, res) {
-          debug('lookupd node delete complete', node, res.status, err);
-          done();
-        });
-    });
-  });
-
-  batch.end(callback);
 }
 
 function hasTopic(topic){
