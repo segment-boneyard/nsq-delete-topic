@@ -44,6 +44,8 @@ describe('nsq-delete-topic library', function () {
 
     beforeEach(function (done) {
       util.createTopic(nsqdHttpHost, topicName, function () {
+        // wait a brief bit-o-time here to give nsqd the chance to notify
+        // lookupd that the topic has been created.
         setTimeout(function () {
           util.assertTopic(lookupdHost, topicName, function (err, exists) {
             if (err) return done(err);
