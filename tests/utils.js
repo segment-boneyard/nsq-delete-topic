@@ -43,7 +43,7 @@ module.exports = {
         return callback(undefined, true);
       }
 
-      return callback(false);
+      return callback(undefined, false);
     });
   },
   publishMessage: function (nsqd, topic, message, callback) {
