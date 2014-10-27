@@ -28,7 +28,7 @@ function deleteTopic(nsqlookupd, topic, fn){
         .post(node + '/topic/delete?topic=' + topic)
         .end(function (err, res) {
           if (err) {
-            debug('error deleting from lookupd', node, error);
+            debug('error deleting from lookupd', node, err);
             return done(err);
           }
           if (res.error) {
