@@ -59,8 +59,10 @@ function deleteOnNsqd(nsqlookupd, topic, callback) {
     }
 
     nodes
-      // need to investigate why adding this causes bad things
-      // to happen in the unit tests.
+      /*
+       * @TODO need to investigate why adding this causes bad things
+       * to happen in the unit tests.
+       */
       // .filter(hasTopic(topic))
       .map(function(node){
         // loop through all of our nodes that contain this topic
